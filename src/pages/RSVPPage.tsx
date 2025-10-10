@@ -362,7 +362,7 @@ export default function RSVPPage() {
                 {/* Seção de Crianças - totalmente oculta a contagem */}
                 <div className="border-t border-gray-200 pt-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-700">Crianças da Família</h3>
+                    <label className="block text-gray-700 font-medium mb-2">Crianças da Família</label>
                     <button
                       type="button"
                       onClick={addChild}
@@ -381,7 +381,7 @@ export default function RSVPPage() {
                     {children.map((child, index) => (
                       <div key={child.id} className="bg-white p-4 rounded-lg border border-gray-200">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium text-gray-700">Criança {index + 1}</h4>
+                          <label className="block text-gray-700 font-medium">Criança {index + 1}</label>
                           <button
                             type="button"
                             onClick={() => removeChild(child.id)}

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Heart, Check, AlertCircle } from 'lucide-react';
+import { Heart, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase, type GuestMessage } from '../lib/supabase';
 
 export default function MessagesPage() {
   const [formData, setFormData] = useState({ name: '', message: '' });
   const [messages, setMessages] = useState<GuestMessage[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
@@ -13,34 +14,83 @@ export default function MessagesPage() {
   }, []);
 
   const fetchMessages = async () => {
-    const { data, error } = await supabase
-      .from('guest_messages')
-      .select('*')
-      .order('created_at', { ascending: false });
+    setIsLoading(true);
+    try {
+      console.log('🔍 Buscando mensagens do Supabase...');
+      
+      const { data, error } = await supabase
+        .from('guest_messages')
+        .select('*')
+        .eq('approved', true)
+        .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setMessages(data);
+      console.log('📦 Resposta completa:', { data, error });
+
+      if (error) {
+        console.error('❌ Erro do Supabase:', error);
+        
+        // Se for erro de RLS, mostra mensagem específica
+        if (error.message.includes('ROW LEVEL SECURITY') || error.code === '42501') {
+          console.error('🔒 Erro de RLS - Verifique as políticas no Supabase');
+        }
+        return;
+      }
+
+      if (data) {
+        console.log(`✅ ${data.length} mensagens carregadas:`, data);
+        setMessages(data);
+      } else {
+        console.log('📭 Nenhum dado retornado');
+        setMessages([]);
+      }
+
+    } catch (error) {
+      console.error('💥 Erro inesperado:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.name.trim() || !formData.message.trim()) {
+      setSubmitStatus('error');
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
     try {
+      console.log('📤 Enviando mensagem...', formData);
+      
       const { error } = await supabase
         .from('guest_messages')
-        .insert([formData]);
+        .insert([{ 
+          name: formData.name.trim(),
+          message: formData.message.trim(),
+          approved: false
+        }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao enviar:', error);
+        throw error;
+      }
 
+      console.log('✅ Mensagem enviada com sucesso!');
       setSubmitStatus('success');
       setFormData({ name: '', message: '' });
-      setTimeout(() => setSubmitStatus('idle'), 5000);
+      
+      // Recarrega as mensagens após 2 segundos
+      setTimeout(() => {
+        fetchMessages();
+        setSubmitStatus('idle');
+      }, 2000);
+
     } catch (error) {
+      console.error('💥 Erro no envio:', error);
       setSubmitStatus('error');
-      console.error('Error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -87,6 +137,7 @@ export default function MessagesPage() {
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition"
+                placeholder="Digite seu nome"
               />
             </div>
 
@@ -108,35 +159,64 @@ export default function MessagesPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-rose-600 text-white py-3 rounded-lg font-medium hover:bg-rose-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-rose-600 text-white py-3 rounded-lg font-medium hover:bg-rose-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
-              {isSubmitting ? 'Enviando...' : 'Enviar Mensagem'}
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Enviando...
+                </>
+              ) : (
+                'Enviar Mensagem'
+              )}
             </button>
           </form>
         </div>
 
         <div>
-          <h2 className="font-serif text-3xl text-rose-900 mb-8 text-center">
-            Mensagens de Amigos e Familiares
-          </h2>
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="font-serif text-3xl text-rose-900">
+              Mensagens de Amigos e Familiares ({messages.length})
+            </h2>
+            <button
+              onClick={fetchMessages}
+              disabled={isLoading}
+              className="flex items-center gap-2 bg-rose-500 text-white px-4 py-2 rounded-lg hover:bg-rose-600 disabled:bg-gray-400 transition-colors"
+            >
+              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+              {isLoading ? 'Carregando...' : 'Atualizar'}
+            </button>
+          </div>
 
-          {messages.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
+              <p className="text-gray-500 mt-4">Carregando mensagens...</p>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <Heart className="w-12 h-12 mx-auto mb-4 text-rose-300" />
-              <p>Seja o primeiro a deixar uma mensagem para os noivos!</p>
+              <p>Nenhuma mensagem aprovada ainda. Seja o primeiro a deixar uma mensagem!</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className="bg-white rounded-lg shadow-md p-6 border-l-4 border-rose-400"
+                  className="bg-white rounded-lg shadow-md p-6 border-l-4 border-rose-400 hover:shadow-lg transition-shadow"
                 >
-                  <div className="flex items-start gap-3 mb-3">
+                  <div className="flex items-start gap-3">
                     <Heart className="text-rose-400 mt-1 flex-shrink-0" size={20} />
                     <div className="flex-1">
-                      <p className="text-gray-800 leading-relaxed mb-2">{msg.message}</p>
-                      <p className="text-rose-600 font-medium text-sm">- {msg.name}</p>
+                      <p className="text-gray-800 leading-relaxed mb-3 whitespace-pre-wrap">
+                        {msg.message}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-rose-600 font-medium text-sm">— {msg.name}</p>
+                        <p className="text-gray-400 text-xs">
+                          {new Date(msg.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -148,29 +228,3 @@ export default function MessagesPage() {
     </div>
   );
 }
-
-// O erro ocorre porque a tabela guest_messages provavelmente não existe no Supabase.
-// Não é necessário alterar este arquivo.
-// Crie a tabela guest_messages no painel do Supabase com as colunas abaixo:
-//
-// id (UUID, Primary Key, default: gen_random_uuid())
-// name (text, obrigatório)
-// message (text, obrigatório)
-// approved (boolean, opcional)
-// created_at (timestamp, default: now())
-//
-// Após criar a tabela e liberar permissão de insert para anon, o erro será resolvido.
-//
-// No Supabase, para deixar um campo obrigatório:
-// Ao criar ou editar a tabela guest_messages, marque o campo como "Not Null".
-// Exemplo SQL para campos obrigatórios:
-//
-// create table guest_messages (
-//   id uuid primary key default gen_random_uuid(),
-//   name text not null,
-//   message text not null,
-//   approved boolean,
-//   created_at timestamp default now()
-// );
-//
-// Os campos name e message são obrigatórios por causa do "not null".
