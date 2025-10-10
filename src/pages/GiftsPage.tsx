@@ -1,4 +1,4 @@
-import { Gift, ExternalLink, Copy, Check, Heart } from 'lucide-react';
+import { Gift, ExternalLink, Copy, Check, Heart, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import pix from '../photos/pix/qrpix.jpeg';
 
@@ -60,6 +60,22 @@ export default function GiftsPage() {
             Você pode contribuir diretamente via PIX
           </p>
 
+          {/* Aviso importante */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-amber-800 text-sm mb-1">Aviso importante:</p>
+                <p className="text-amber-700 text-sm">
+                  Antes de fazer o PIX, <strong>confirme se o destinatário é</strong>
+                </p>
+                <p className="text-amber-800 font-semibold text-sm mt-1">
+                  ANDERSON CLEY CRUZ LOPES
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-lg p-6 max-w-md mx-auto">
             <p className="text-sm text-gray-600 mb-2">Chave PIX:</p>
             <div className="flex items-center gap-3">
@@ -92,7 +108,7 @@ export default function GiftsPage() {
         </div>
 
         <div>
-          <h2 className="font-serif text-3xl text-rose-900 mb-6 text-center">Lojas Parceiras</h2>
+          <h2 className="font-serif text-3xl text-rose-900 mb-6 text-center">Lista de Presentes</h2>
           <p className="text-gray-600 text-center mb-8">
             Escolha presentes em nossas lojas favoritas
           </p>
