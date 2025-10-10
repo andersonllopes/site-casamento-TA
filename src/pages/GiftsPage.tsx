@@ -15,25 +15,25 @@ export default function GiftsPage() {
 
   const stores: GiftStore[] = [
     {
-      name: 'Americanas',
-      url: 'https://www.americanas.com.br',
+      name: 'ICasei',
+      url: 'https://sites.icasei.com.br/andersonthais/pages/35091204',
       icon: '🛍️'
     },
-    {
-      name: 'Magazine Luiza',
-      url: 'https://www.magazineluiza.com.br',
-      icon: '🏪'
-    },
-    {
-      name: 'Casas Bahia',
-      url: 'https://www.casasbahia.com.br',
-      icon: '🏠'
-    },
-    {
-      name: 'Amazon',
-      url: 'https://www.amazon.com.br',
-      icon: '📦'
-    }
+    // {
+    //   name: 'Magazine Luiza',
+    //   url: 'https://www.magazineluiza.com.br',
+    //   icon: '🏪'
+    // },
+    // {
+    //   name: 'Casas Bahia',
+    //   url: 'https://www.casasbahia.com.br',
+    //   icon: '🏠'
+    // },
+    // {
+    //   name: 'Amazon',
+    //   url: 'https://www.amazon.com.br',
+    //   icon: '📦'
+    // }
   ];
 
   const copyPixKey = () => {
