@@ -1,5 +1,6 @@
 import { Gift, ExternalLink, Copy, Check, Heart } from 'lucide-react';
 import { useState } from 'react';
+import pix from '../photos/pix/qrpix.jpeg';
 
 interface GiftStore {
   name: string;
@@ -10,7 +11,7 @@ interface GiftStore {
 export default function GiftsPage() {
   const [copiedPix, setCopiedPix] = useState(false);
 
-  const pixKey = 'seuemail@exemplo.com';
+  const pixKey = 'andersoncley2009@gmail.com';
 
   const stores: GiftStore[] = [
     {
@@ -79,13 +80,13 @@ export default function GiftsPage() {
           </div>
 
           <div className="mt-6 bg-white rounded-lg p-6 max-w-md mx-auto">
-            <p className="text-sm text-gray-600 mb-2 text-center">Ou escaneie o QR Code:</p>
-            <div className="bg-gray-200 w-48 h-48 mx-auto rounded-lg flex items-center justify-center">
-              <p className="text-gray-500 text-sm text-center px-4">
-                QR Code PIX
-                <br />
-                <span className="text-xs">(Adicione sua imagem aqui)</span>
-              </p>
+            <p className="text-sm text-gray-600 mb-4 text-center">Ou escaneie o QR Code:</p>
+            <div className="bg-gray-100 w-64 h-64 mx-auto rounded-lg flex items-center justify-center p-4">
+              <img 
+                src={pix} 
+                alt="QR Code PIX" 
+                className="w-full h-full object-contain rounded-lg" 
+              />
             </div>
           </div>
         </div>

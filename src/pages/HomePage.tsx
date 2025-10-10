@@ -18,7 +18,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
           backgroundPosition: 'center 70%',
         }}
       >
-        <div className="text-center text-white px-400">
+        <div className="text-center text-white px-4">
           <h1 className="font-serif text-6xl md:text-8xl mb-1 animate-fade-in">
             Thais & Anderson
           </h1>
