@@ -1,19 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
-import ta1Photo from '../photos/T_A-1.jpg';
-import ta2Photo from '../photos/T_A-2.jpg';
-import ta3Photo from '../photos/T_A-3.jpg';
-import ta4Photo from '../photos/T_A-4.jpg';
-import ta5Photo from '../photos/T_A-5.jpg';
-// import ta6Photo from '../photos/T_A-6.jpg';
-import ta7Photo from '../photos/T_A-7.jpg';
-import ta8Photo from '../photos/T_A-8.jpg';
-import ta9Photo from '../photos/T_A-9.jpg';
-import ta10Photo from '../photos/T_A-10.jpg';
-import ta70Photo from '../photos/T_A-70.jpg';
-import ta99Photo from '../photos/T_A-99.jpg';
-import ta176Photo from '../photos/T_A-176.jpg';
-
 
 interface Album {
   title: string;
@@ -25,48 +11,72 @@ interface Album {
 export default function GalleryPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const albums: Album[] = [
-    {
-      title: 'PRE WEDDING',
-      count: 13,
-      cover: ta176Photo as string,
-      photos: [
-        ta1Photo as string,
-        ta2Photo as string,
-        ta3Photo as string,
-        ta4Photo as string,
-        ta5Photo as string,
-        // ta6Photo as string,
-        ta7Photo as string,
-        ta8Photo as string,
-        ta9Photo as string,
-        ta10Photo as string,
-        ta70Photo as string,
-        ta99Photo as string,
-        ta176Photo as string
-      ]
-    },
-    // {
-    //   title: 'Nosso Noivado',
-    //   count: 12,
-    //   cover: 'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=800',
-    //   photos: [
-    //     'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/265705/pexels-photo-265705.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/265857/pexels-photo-265857.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/265872/pexels-photo-265872.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/433452/pexels-photo-433452.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/2072179/pexels-photo-2072179.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/2072183/pexels-photo-2072183.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    //     'https://images.pexels.com/photos/2072180/pexels-photo-2072180.jpeg?auto=compress&cs=tinysrgb&w=1200'
-    //   ]
-    // }
-  ];
+  // Carrega as fotos automaticamente usando import.meta.glob (Vite)
+  useEffect(() => {
+    const loadPhotos = async () => {
+      try {
+        // Importa todas as fotos da pasta photos
+        const photoModules = import.meta.glob('../photos/T_A-*.{jpg,jpeg,png}', { 
+          eager: true,
+          query: '?url'
+        });
+
+        // Converte para array e ordena numericamente
+        const photoPaths = Object.entries(photoModules)
+          .map(([path, module]: [string, any]) => ({
+            path,
+            url: module.default,
+            number: parseInt(path.match(/T_A-(\d+)/)?.[1] || '0')
+          }))
+          .sort((a, b) => a.number - b.number)
+          .map(item => item.url);
+
+        // Cria álbuns automaticamente
+        const PHOTOS_PER_ALBUM = 100;
+        const loadedAlbums: Album[] = [];
+
+        if (photoPaths.length === 0) {
+          // Fallback caso não encontre fotos
+          loadedAlbums.push({
+            title: 'PRE WEDDING',
+            count: 0,
+            cover: '/placeholder.jpg',
+            photos: []
+          });
+        } else {
+          for (let i = 0; i < photoPaths.length; i += PHOTOS_PER_ALBUM) {
+            const albumPhotos = photoPaths.slice(i, i + PHOTOS_PER_ALBUM);
+            const albumNumber = Math.floor(i / PHOTOS_PER_ALBUM) + 1;
+            
+            loadedAlbums.push({
+              title: albumPhotos.length > 1 ? `PRE WEDDING - Sessão ${albumNumber}` : 'PRE WEDDING',
+              count: albumPhotos.length,
+              cover: albumPhotos[0],
+              photos: albumPhotos
+            });
+          }
+        }
+
+        setAlbums(loadedAlbums);
+      } catch (error) {
+        console.error('Erro ao carregar fotos:', error);
+        // Fallback manual com algumas fotos
+        setAlbums([{
+          title: 'PRE WEDDING',
+          count: 13,
+          cover: '/placeholder.jpg',
+          photos: []
+        }]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPhotos();
+  }, []);
 
   const openLightbox = (album: Album, index: number) => {
     setSelectedAlbum(album);
@@ -94,30 +104,62 @@ export default function GalleryPage() {
     }
   };
 
+  // Navegação por teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedAlbum) return;
+      
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') nextPhoto();
+      if (e.key === 'ArrowLeft') prevPhoto();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedAlbum]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-rose-50 pt-24 pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-rose-600 mx-auto mb-4"></div>
+          <p className="text-rose-900 text-lg">Carregando galeria...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-rose-50 pt-24 pb-20">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <p className="text-rose-600 text-sm uppercase tracking-wide mb-2">Nossas Memórias</p>
           <h1 className="font-serif text-5xl text-rose-900 mb-4">Galeria do Casamento</h1>
-          <p className="text-gray-600 text-lg">Cada imagem desta galeria conta um pedaço da nossa história...</p>
+          <p className="text-gray-600 text-lg">
+            {albums.reduce((total, album) => total + album.count, 0)} momentos especiais capturados
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        {/* Cards dos Álbuns */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           {albums.map((album, index) => (
             <div
               key={index}
-              className="group relative overflow-hidden rounded-lg shadow-lg cursor-pointer"
+              className="group relative overflow-hidden rounded-lg shadow-lg cursor-pointer bg-white"
               onClick={() => openLightbox(album, 0)}
             >
               <img
                 src={album.cover}
                 alt={album.title}
-                className="w-full h-96 object-cover transition-transform duration-300 group-hover:scale-110"
+                className="w-full h-80 object-cover transition-transform duration-300 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
-                <div className="p-6 text-white">
-                  <p className="text-sm mb-1">{album.count} Photos</p>
+                <div className="p-6 text-white w-full">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm bg-rose-600 px-2 py-1 rounded">
+                      {album.count} {album.count === 1 ? 'foto' : 'fotos'}
+                    </span>
+                  </div>
                   <h3 className="font-serif text-2xl">{album.title}</h3>
                 </div>
               </div>
@@ -125,21 +167,30 @@ export default function GalleryPage() {
           ))}
         </div>
 
+        {/* Grid de Fotos de Cada Álbum */}
         {albums.map((album, albumIndex) => (
           <div key={albumIndex} className="mt-16">
-            <h2 className="font-serif text-3xl text-rose-900 mb-6">{album.title}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <h2 className="font-serif text-3xl text-rose-900 mb-6 border-b border-rose-200 pb-2">
+              {album.title}
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {album.photos.map((photo, photoIndex) => (
                 <div
                   key={photoIndex}
-                  className="relative overflow-hidden rounded-lg shadow cursor-pointer group"
+                  className="relative overflow-hidden rounded-lg shadow cursor-pointer group aspect-square"
                   onClick={() => openLightbox(album, photoIndex)}
                 >
                   <img
                     src={photo}
                     alt={`${album.title} ${photoIndex + 1}`}
-                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    loading="lazy"
                   />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white text-sm bg-black/50 px-2 py-1 rounded">
+                      Ver foto
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -147,36 +198,37 @@ export default function GalleryPage() {
         ))}
       </div>
 
+      {/* Lightbox */}
       {selectedAlbum && (
         <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
           <button
             onClick={closeLightbox}
-            className="absolute top-4 right-4 text-white hover:text-rose-300 transition-colors"
+            className="absolute top-4 right-4 text-white hover:text-rose-300 transition-colors bg-black/50 rounded-full p-2 z-10"
           >
             <X size={32} />
           </button>
 
           <button
             onClick={prevPhoto}
-            className="absolute left-4 text-white hover:text-rose-300 transition-colors"
+            className="absolute left-4 text-white hover:text-rose-300 transition-colors bg-black/50 rounded-full p-2 z-10"
           >
             <ChevronLeft size={48} />
           </button>
 
-          <div className="max-w-5xl max-h-full">
+          <div className="max-w-5xl max-h-full text-center">
             <img
               src={selectedAlbum.photos[currentPhotoIndex]}
               alt={`${selectedAlbum.title} ${currentPhotoIndex + 1}`}
-              className="max-w-full max-h-[85vh] object-contain"
+              className="max-w-full max-h-[85vh] object-contain mx-auto"
             />
-            <p className="text-white text-center mt-4">
-              {currentPhotoIndex + 1} / {selectedAlbum.photos.length}
+            <p className="text-white text-center mt-4 text-lg">
+              {currentPhotoIndex + 1} / {selectedAlbum.photos.length} - {selectedAlbum.title}
             </p>
           </div>
 
           <button
             onClick={nextPhoto}
-            className="absolute right-4 text-white hover:text-rose-300 transition-colors"
+            className="absolute right-4 text-white hover:text-rose-300 transition-colors bg-black/50 rounded-full p-2 z-10"
           >
             <ChevronRight size={48} />
           </button>

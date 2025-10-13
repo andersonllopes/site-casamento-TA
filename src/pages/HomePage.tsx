@@ -1,8 +1,8 @@
 import { Heart, Calendar, MapPin } from 'lucide-react';
 import Countdown from '../components/Countdown';
 import bgCover from '../photos/T_A-2.jpg'; // ajuste o nome conforme o arquivo real
-import andersonPhoto from '../photos/T_A-137-V2.jpg'; // já está importado
-import thaisPhoto from '../photos/T_A-80-V2.jpg'; // adicione esta linha
+import andersonPhoto from '../photos/rosto/T_A-137-V2.jpg'; // já está importado
+import thaisPhoto from '../photos/rosto/T_A-80-V2.jpg'; // adicione esta linha
 
 interface HomePageProps {
   onNavigate: (page: string) => void;
