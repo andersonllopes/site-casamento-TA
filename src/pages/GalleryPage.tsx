@@ -5,7 +5,7 @@ import ta2Photo from '../photos/T_A-2.jpg';
 import ta3Photo from '../photos/T_A-3.jpg';
 import ta4Photo from '../photos/T_A-4.jpg';
 import ta5Photo from '../photos/T_A-5.jpg';
-import ta6Photo from '../photos/T_A-6.jpg';
+// import ta6Photo from '../photos/T_A-6.jpg';
 import ta7Photo from '../photos/T_A-7.jpg';
 import ta8Photo from '../photos/T_A-8.jpg';
 import ta9Photo from '../photos/T_A-9.jpg';
@@ -37,7 +37,7 @@ export default function GalleryPage() {
         ta3Photo as string,
         ta4Photo as string,
         ta5Photo as string,
-        ta6Photo as string,
+        // ta6Photo as string,
         ta7Photo as string,
         ta8Photo as string,
         ta9Photo as string,
