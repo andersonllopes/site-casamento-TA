@@ -7,13 +7,12 @@ import 'swiper/css';
 import 'swiper/css/effect-fade';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
-import '../styles/swiper.css'; // Importe o arquivo CSS personalizado
 
 // Importe suas fotos - ajuste os caminhos conforme necessário
 import bgCover1 from '../photos/T_A-2.jpg';
-import bgCover2 from '../photos/T_A-284.jpg';
-import bgCover3 from '../photos/T_A-259.jpg';
-import bgCover4 from '../photos/T_A-293.jpg';
+import bgCover2 from '../photos/T_A-3.jpg';
+import bgCover3 from '../photos/T_A-4.jpg';
+import bgCover4 from '../photos/T_A-5.jpg';
 import andersonPhoto from '../photos/rosto/T_A-137-V2.jpg';
 import thaisPhoto from '../photos/rosto/T_A-80-V2.jpg';
 
@@ -25,26 +24,22 @@ const slides = [
   {
     image: bgCover1,
     title: 'Thais & Anderson',
-    subtitle: '21 de Dezembro, 2025',
-    position: 'center 80%' // padrão que já funciona
+    subtitle: '21 de Dezembro, 2025'
   },
   {
     image: bgCover2,
     title: 'Nosso Amor',
-    subtitle: 'Vamos nos Casar!',
-    position: 'center 38%' // ajuste conforme necessário
+    subtitle: 'Vamos nos Casar!'
   },
   {
     image: bgCover3,
     title: 'Celebre Conosco',
-    subtitle: 'São Paulo, BR',
-    position: 'center 57%' // ajuste conforme necessário
+    subtitle: 'São Paulo, BR'
   },
   {
     image: bgCover4,
     title: 'Thais & Anderson',
-    subtitle: '21 de Dezembro, 2025',
-    position: 'center 48%' // ajuste conforme necessário
+    subtitle: '21 de Dezembro, 2025'
   },
 ];
 
@@ -89,7 +84,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 className="h-full bg-cover bg-center flex items-center justify-center relative"
                 style={{
                   backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url(${slide.image})`,
-                  backgroundPosition: slide.position,
+                  backgroundPosition: 'center 70%',
                 }}
               >
                 <div className="text-center text-white px-4 z-10">
@@ -117,8 +112,8 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
         {/* Navegação Customizada */}
         <button 
-          className={`swiper-button-prev absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/20 text-white p-3 rounded-full transition-all ${
-            isBeginning ? 'opacity-50 cursor-default' : 'opacity-100 hover:bg-white/30'
+          className={`swiper-button-prev absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-all ${
+            isBeginning ? 'opacity-50 cursor-default' : 'opacity-100'
           }`}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -127,8 +122,8 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         </button>
         
         <button 
-          className={`swiper-button-next absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/20 text-white p-3 rounded-full transition-all ${
-            isEnd ? 'opacity-50 cursor-default' : 'opacity-100 hover:bg-white/30'
+          className={`swiper-button-next absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-all ${
+            isEnd ? 'opacity-50 cursor-default' : 'opacity-100'
           }`}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -137,7 +132,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         </button>
 
         {/* Paginação Customizada */}
-        <div className="swiper-pagination absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"></div>
+        <div className="swiper-pagination absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex space-x-2"></div>
       </section>
 
       {/* Seção: Vamos nos Casar! */}
@@ -262,6 +257,32 @@ export default function HomePage({ onNavigate }: HomePageProps) {
           </button>
         </div>
       </section>
+
+      {/* Estilos customizados para o Swiper */}
+      <style jsx>{`
+        .swiper-pagination-bullet {
+          background: rgba(255, 255, 255, 0.5);
+          opacity: 1;
+          width: 12px;
+          height: 12px;
+        }
+        .swiper-pagination-bullet-active {
+          background: white;
+          transform: scale(1.2);
+        }
+        .swiper-button-prev,
+        .swiper-button-next {
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .swiper-button-prev:after,
+        .swiper-button-next:after {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }

@@ -10,12 +10,17 @@ interface Album {
   category: string;
 }
 
+interface ImageLoadState {
+  [key: string]: boolean;
+}
+
 export default function GalleryPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('todos');
+  const [loadedImages, setLoadedImages] = useState<ImageLoadState>({});
 
   // Carrega as fotos automaticamente usando import.meta.glob (Vite)
   useEffect(() => {
@@ -133,6 +138,10 @@ export default function GalleryPage() {
     loadPhotos();
   }, []);
 
+  const handleImageLoad = (imageKey: string) => {
+    setLoadedImages(prev => ({ ...prev, [imageKey]: true }));
+  };
+
   const categories = [
     { id: 'todos', name: 'Todos os Momentos' },
     { id: 'namoro', name: 'Namoro' },
@@ -184,6 +193,50 @@ export default function GalleryPage() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedAlbum]);
 
+  // Componente de imagem com loading
+  const ImageWithLoader = ({ 
+    src, 
+    alt, 
+    className, 
+    imageKey,
+    onClick 
+  }: { 
+    src: string; 
+    alt: string; 
+    className: string; 
+    imageKey: string;
+    onClick?: () => void;
+  }) => {
+    const isLoaded = loadedImages[imageKey];
+
+    return (
+      <div className="relative overflow-hidden">
+        {/* Placeholder enquanto carrega */}
+        {!isLoaded && (
+          <div className={`absolute inset-0 bg-gray-200 flex items-center justify-center ${className}`}>
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-rose-600 mb-2"></div>
+              <p className="text-gray-500 text-xs">Carregando...</p>
+            </div>
+          </div>
+        )}
+        
+        <img
+          src={src}
+          alt={alt}
+          className={`${className} transition-all duration-500 ${
+            isLoaded 
+              ? 'opacity-100 transform scale-100' 
+              : 'opacity-0 transform scale-95'
+          }`}
+          onLoad={() => handleImageLoad(imageKey)}
+          onClick={onClick}
+          loading="lazy"
+        />
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-rose-50 pt-24 pb-20 flex items-center justify-center">
@@ -232,10 +285,11 @@ export default function GalleryPage() {
               className="group relative overflow-hidden rounded-2xl shadow-xl cursor-pointer bg-white transform transition-transform duration-300 hover:scale-105"
               onClick={() => openLightbox(album, 0)}
             >
-              <img
+              <ImageWithLoader
                 src={album.cover}
                 alt={album.title}
                 className="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-110"
+                imageKey={`album-cover-${index}`}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end">
                 <div className="p-6 text-white w-full">
@@ -267,11 +321,11 @@ export default function GalleryPage() {
                   className="relative overflow-hidden rounded-xl shadow-lg cursor-pointer group aspect-square"
                   onClick={() => openLightbox(album, photoIndex)}
                 >
-                  <img
+                  <ImageWithLoader
                     src={photo}
                     alt={`${album.title} ${photoIndex + 1}`}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    loading="lazy"
+                    imageKey={`album-${albumIndex}-photo-${photoIndex}`}
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white text-sm bg-black/50 px-3 py-2 rounded-full">
@@ -303,11 +357,22 @@ export default function GalleryPage() {
           </button>
 
           <div className="max-w-5xl max-h-full text-center">
-            <img
-              src={selectedAlbum.photos[currentPhotoIndex]}
-              alt={`${selectedAlbum.title} ${currentPhotoIndex + 1}`}
-              className="max-w-full max-h-[85vh] object-contain mx-auto rounded-lg"
-            />
+            <div className="relative">
+              {!loadedImages[`lightbox-${currentPhotoIndex}`] && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                  <div className="flex flex-col items-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mb-4"></div>
+                    <p className="text-white text-lg">Carregando memória...</p>
+                  </div>
+                </div>
+              )}
+              <img
+                src={selectedAlbum.photos[currentPhotoIndex]}
+                alt={`${selectedAlbum.title} ${currentPhotoIndex + 1}`}
+                className="max-w-full max-h-[85vh] object-contain mx-auto rounded-lg transition-opacity duration-300"
+                onLoad={() => handleImageLoad(`lightbox-${currentPhotoIndex}`)}
+              />
+            </div>
             <div className="text-white text-center mt-6">
               <p className="text-xl font-serif">{selectedAlbum.title}</p>
               <p className="text-rose-200 mt-1">

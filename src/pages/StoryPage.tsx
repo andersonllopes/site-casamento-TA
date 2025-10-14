@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import ta70Photo from '../photos/T_A-70.jpg';
 import ta99Photo from '../photos/T_A-99.jpg';
 import ta176Photo from '../photos/T_A-176.jpg';
 
 export default function StoryPage() {
+  const [loadedImages, setLoadedImages] = useState({});
+
   const timeline = [
     {
       title: 'Primeiro, nós nos conhecemos',
@@ -21,6 +24,10 @@ export default function StoryPage() {
     }
   ];
 
+  const handleImageLoad = (index) => {
+    setLoadedImages(prev => ({ ...prev, [index]: true }));
+  };
+
   return (
     <div className="min-h-screen bg-white pt-24 pb-20">
       <div className="max-w-4xl mx-auto px-4">
@@ -36,13 +43,30 @@ export default function StoryPage() {
               key={index}
               className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 items-center`}
             >
-              <div className="w-full md:w-1/2">
+              <div className="w-full md:w-1/2 relative">
+                {/* Placeholder enquanto carrega */}
+                {!loadedImages[index] && (
+                  <div className="rounded-lg bg-gray-200 w-full h-80 flex items-center justify-center">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600 mb-2"></div>
+                      <p className="text-gray-500 text-sm">Carregando...</p>
+                    </div>
+                  </div>
+                )}
+                
                 <img
                   src={item.image}
                   alt={item.title}
-                  className="rounded-lg shadow-lg w-full h-80 object-cover"
+                  className={`rounded-lg shadow-lg w-full h-80 object-cover transition-all duration-500 ${
+                    loadedImages[index] 
+                      ? 'opacity-100 transform scale-100' 
+                      : 'opacity-0 transform scale-95 absolute top-0 left-0'
+                  }`}
+                  onLoad={() => handleImageLoad(index)}
+                  loading="lazy"
                 />
               </div>
+              
               <div className="w-full md:w-1/2">
                 <div className="bg-rose-50 rounded-lg p-8">
                   <h3 className="font-serif text-2xl text-rose-900 mb-4">{item.title}</h3>
