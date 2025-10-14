@@ -457,8 +457,84 @@ export default function RSVPPage() {
                       />
                     </div>
 
-                    {/* Resto do formulário (crianças, restrições alimentares) permanece igual */}
-                    {/* ... */}
+                    {/* Seção de Crianças - totalmente oculta a contagem */}
+                    <div className="border-t border-gray-200 pt-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <label className="block text-gray-700 font-medium mb-2">Crianças da Família</label>
+                        <button
+                          type="button"
+                          onClick={addChild}
+                          className="flex items-center gap-2 bg-rose-500 text-white px-4 py-2 rounded-lg hover:bg-rose-600 transition-colors"
+                        >
+                          <Plus size={16} />
+                          Adicionar Criança
+                        </button>
+                      </div>
+
+                      <p className="text-sm text-gray-600 mb-4">
+                        Informe os dados das crianças para nos ajudar no planejamento do evento.
+                      </p>
+
+                      <div className="space-y-4">
+                        {children.map((child, index) => (
+                          <div key={child.id} className="bg-white p-4 rounded-lg border border-gray-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <label className="block text-gray-700 font-medium">Criança {index + 1}</label>
+                              <button
+                                type="button"
+                                onClick={() => removeChild(child.id)}
+                                className="text-red-500 hover:text-red-700 transition-colors"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Nome da Criança
+                                </label>
+                                <input
+                                  type="text"
+                                  value={child.name}
+                                  onChange={(e) => updateChild(child.id, 'name', e.target.value)}
+                                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-200 outline-none transition"
+                                  placeholder="Nome completo"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Data de Nascimento *
+                                </label>
+                                <input
+                                  type="date"
+                                  required
+                                  value={child.birthDate}
+                                  onChange={(e) => updateChild(child.id, 'birthDate', e.target.value)}
+                                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-200 outline-none transition"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                      
+                    <div>
+                      <label htmlFor="dietary_restrictions" className="block text-gray-700 font-medium mb-2">
+                        Restrições Alimentares ou Alergias
+                      </label>
+                      <textarea
+                        id="dietary_restrictions"
+                        name="dietary_restrictions"
+                        rows={3}
+                        value={formData.dietary_restrictions}
+                        onChange={handleChange}
+                        placeholder="Informe restrições para adultos e crianças..."
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition resize-none"
+                      />
+                    </div>
                   </>
                 )}
 
