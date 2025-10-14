@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, ChevronLeft, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
 interface Album {
   title: string;
@@ -8,6 +8,7 @@ interface Album {
   cover: string;
   photos: string[];
   category: string;
+  video?: string;
 }
 
 interface ImageLoadState {
@@ -16,11 +17,16 @@ interface ImageLoadState {
 
 export default function GalleryPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('todos');
   const [loadedImages, setLoadedImages] = useState<ImageLoadState>({});
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Carrega as fotos automaticamente usando import.meta.glob (Vite)
   useEffect(() => {
@@ -41,6 +47,24 @@ export default function GalleryPage() {
             query: '?url'
           })
         };
+
+        // CORREÇÃO: Importação do vídeo mais robusta
+        let noivadoVideo = '';
+        try {
+          // Tenta importar o vídeo
+          const videoModules = import.meta.glob('../photos/noivado/*.mp4', { 
+            eager: true,
+            query: '?url'
+          });
+          noivadoVideo = Object.values(videoModules)[0]?.default || '';
+        } catch (videoError) {
+          console.log('Vídeo não encontrado na importação automática');
+        }
+
+        // Fallback para desenvolvimento
+        if (!noivadoVideo) {
+          noivadoVideo = '/photos/noivado/pedido.mp4';
+        }
 
         const loadedAlbums: Album[] = [];
 
@@ -70,20 +94,21 @@ export default function GalleryPage() {
           }
         }
 
-        // Álbum Noivado
+        // Álbum Noivado com vídeo
         const noivadoPhotos = Object.entries(photoModules.noivado)
           .map(([path, module]: [string, any]) => ({
             url: module.default
           }))
           .map(item => item.url);
 
-        if (noivadoPhotos.length > 0) {
+        if (noivadoPhotos.length > 0 || noivadoVideo) {
           loadedAlbums.push({
             title: 'Tempo de Espera e Sonhos',
             subtitle: 'Nossa Fase de Noivado',
-            count: noivadoPhotos.length,
-            cover: noivadoPhotos[0],
+            count: noivadoPhotos.length + (noivadoVideo ? 1 : 0),
+            cover: noivadoPhotos[0] || '/placeholder.jpg',
             photos: noivadoPhotos,
+            video: noivadoVideo,
             category: 'noivado'
           });
         }
@@ -122,14 +147,17 @@ export default function GalleryPage() {
       } catch (error) {
         console.error('Erro ao carregar fotos:', error);
         // Fallback manual
-        setAlbums([{
-          title: 'Nossa História de Amor',
-          subtitle: 'Memórias que Guardaremos para Sempre',
-          count: 13,
-          cover: '/placeholder.jpg',
-          photos: [],
-          category: 'prewedding'
-        }]);
+        setAlbums([
+          {
+            title: 'Tempo de Espera e Sonhos',
+            subtitle: 'Nossa Fase de Noivado',
+            count: 8,
+            cover: '/placeholder.jpg',
+            photos: Array(8).fill('/placeholder.jpg'),
+            video: '/photos/noivado/pedido.mp4',
+            category: 'noivado'
+          }
+        ]);
       } finally {
         setIsLoading(false);
       }
@@ -140,6 +168,58 @@ export default function GalleryPage() {
 
   const handleImageLoad = (imageKey: string) => {
     setLoadedImages(prev => ({ ...prev, [imageKey]: true }));
+  };
+
+  // Funções do vídeo
+  const toggleVideoPlayback = () => {
+    if (videoRef.current) {
+      if (isVideoPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch(error => {
+          console.error('Erro ao reproduzir vídeo:', error);
+        });
+      }
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsVideoMuted(!isVideoMuted);
+    }
+  };
+
+  const handleVideoEnd = () => {
+    setIsVideoPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const handleVideoPlay = () => {
+    setIsVideoPlaying(true);
+  };
+
+  const handleVideoPause = () => {
+    setIsVideoPlaying(false);
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+    }
+  };
+
+  // Formatar tempo
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const categories = [
@@ -153,29 +233,76 @@ export default function GalleryPage() {
     ? albums 
     : albums.filter(album => album.category === activeCategory);
 
+  // CORREÇÃO: Funções de abertura simplificadas e diretas
   const openLightbox = (album: Album, index: number) => {
+    console.log('Abrindo lightbox para foto:', index);
     setSelectedAlbum(album);
-    setCurrentPhotoIndex(index);
+    setCurrentIndex(index);
+    setIsVideoPlaying(false);
+    setCurrentTime(0);
+  };
+
+  // CORREÇÃO: Função específica para abrir vídeo
+  const openVideo = (album: Album) => {
+    console.log('Abrindo vídeo para álbum:', album.title);
+    setSelectedAlbum(album);
+    setCurrentIndex(-1); // -1 indica modo vídeo
+    setIsVideoPlaying(true);
+    setCurrentTime(0);
   };
 
   const closeLightbox = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
     setSelectedAlbum(null);
-    setCurrentPhotoIndex(0);
+    setCurrentIndex(0);
+    setIsVideoPlaying(false);
+    setIsVideoMuted(true);
+    setCurrentTime(0);
   };
 
-  const nextPhoto = () => {
-    if (selectedAlbum) {
-      setCurrentPhotoIndex((prev) =>
-        prev === selectedAlbum.photos.length - 1 ? 0 : prev + 1
-      );
+  // Navegação
+  const nextMedia = () => {
+    if (!selectedAlbum) return;
+
+    const totalPhotos = selectedAlbum.photos.length;
+    const hasVideo = !!selectedAlbum.video;
+
+    if (isVideoPlaying) {
+      setIsVideoPlaying(false);
+      setCurrentIndex(0);
+    } else if (currentIndex === totalPhotos - 1) {
+      if (hasVideo) {
+        setIsVideoPlaying(true);
+        setCurrentTime(0);
+      } else {
+        setCurrentIndex(0);
+      }
+    } else {
+      setCurrentIndex(prev => prev + 1);
     }
   };
 
-  const prevPhoto = () => {
-    if (selectedAlbum) {
-      setCurrentPhotoIndex((prev) =>
-        prev === 0 ? selectedAlbum.photos.length - 1 : prev - 1
-      );
+  const prevMedia = () => {
+    if (!selectedAlbum) return;
+
+    const totalPhotos = selectedAlbum.photos.length;
+    const hasVideo = !!selectedAlbum.video;
+
+    if (isVideoPlaying) {
+      setIsVideoPlaying(false);
+      setCurrentIndex(totalPhotos - 1);
+    } else if (currentIndex === 0) {
+      if (hasVideo) {
+        setIsVideoPlaying(true);
+        setCurrentTime(0);
+      } else {
+        setCurrentIndex(totalPhotos - 1);
+      }
+    } else {
+      setCurrentIndex(prev => prev - 1);
     }
   };
 
@@ -185,13 +312,27 @@ export default function GalleryPage() {
       if (!selectedAlbum) return;
       
       if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowRight') nextPhoto();
-      if (e.key === 'ArrowLeft') prevPhoto();
+      if (e.key === 'ArrowRight') nextMedia();
+      if (e.key === 'ArrowLeft') prevMedia();
+      if (e.key === ' ' && selectedAlbum.video) {
+        e.preventDefault();
+        toggleVideoPlayback();
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedAlbum]);
+  }, [selectedAlbum, isVideoPlaying, currentIndex]);
+
+  // Controlar reprodução do vídeo
+  useEffect(() => {
+    if (videoRef.current && selectedAlbum?.video && isVideoPlaying) {
+      videoRef.current.play().catch(error => {
+        console.error('Erro ao reproduzir vídeo:', error);
+        setIsVideoPlaying(false);
+      });
+    }
+  }, [isVideoPlaying, selectedAlbum]);
 
   // Componente de imagem com loading
   const ImageWithLoader = ({ 
@@ -211,7 +352,6 @@ export default function GalleryPage() {
 
     return (
       <div className="relative overflow-hidden">
-        {/* Placeholder enquanto carrega */}
         {!isLoaded && (
           <div className={`absolute inset-0 bg-gray-200 flex items-center justify-center ${className}`}>
             <div className="flex flex-col items-center">
@@ -233,6 +373,39 @@ export default function GalleryPage() {
           onClick={onClick}
           loading="lazy"
         />
+      </div>
+    );
+  };
+
+  // CORREÇÃO: Componente para o card de vídeo - SIMPLIFICADO E FUNCIONAL
+  const VideoCard = ({ album }: { album: Album }) => {
+    // CORREÇÃO: Função direta sem complicações
+    const handleVideoClick = () => {
+      console.log('Clicou no card de vídeo');
+      openVideo(album);
+    };
+
+    return (
+      <div
+        className="relative overflow-hidden rounded-xl shadow-lg cursor-pointer group aspect-square bg-gradient-to-br from-rose-500 to-rose-700 hover:from-rose-600 hover:to-rose-800 transition-all duration-300"
+        onClick={handleVideoClick}
+      >
+        <div className="w-full h-full flex flex-col items-center justify-center text-white p-4 text-center">
+          <div className="bg-white/20 rounded-full p-4 mb-3 transform group-hover:scale-110 transition-transform duration-300">
+            <Play size={32} className="ml-1" fill="white" />
+          </div>
+          <p className="font-semibold text-lg mb-1">Vídeo Especial</p>
+          <p className="text-sm opacity-90">1 Minuto</p>
+        </div>
+        
+        {/* Badge de vídeo */}
+        <div className="absolute top-3 right-3 bg-white/90 text-rose-600 text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium">
+          <Play size={10} />
+          Vídeo
+        </div>
+
+        {/* Efeito de hover */}
+        <div className="absolute inset-0 border-2 border-transparent group-hover:border-white/30 rounded-xl transition-all duration-300" />
       </div>
     );
   };
@@ -291,12 +464,19 @@ export default function GalleryPage() {
                 className="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-110"
                 imageKey={`album-cover-${index}`}
               />
+              
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end">
                 <div className="p-6 text-white w-full">
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-sm bg-rose-600/90 px-3 py-1 rounded-full">
                       {album.count} {album.count === 1 ? 'memória' : 'memórias'}
+                      {album.video && ' + vídeo'}
                     </span>
+                    {album.video && (
+                      <span className="text-xs bg-blue-600/90 px-2 py-1 rounded-full">
+                        Tem vídeo!
+                      </span>
+                    )}
                   </div>
                   <h3 className="font-serif text-2xl font-bold mb-2">{album.title}</h3>
                   <p className="text-rose-200 text-sm">{album.subtitle}</p>
@@ -306,7 +486,7 @@ export default function GalleryPage() {
           ))}
         </div>
 
-        {/* Grid de Fotos de Cada Álbum */}
+        {/* Grid de Fotos e Vídeos de Cada Álbum */}
         {filteredAlbums.map((album, albumIndex) => (
           <div key={albumIndex} className="mt-16 first:mt-0">
             <div className="text-center mb-8">
@@ -314,7 +494,9 @@ export default function GalleryPage() {
               <p className="text-gray-600 text-lg">{album.subtitle}</p>
               <div className="w-24 h-1 bg-rose-300 mx-auto mt-4"></div>
             </div>
+            
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {/* Fotos do Álbum PRIMEIRO */}
               {album.photos.map((photo, photoIndex) => (
                 <div
                   key={photoIndex}
@@ -334,6 +516,11 @@ export default function GalleryPage() {
                   </div>
                 </div>
               ))}
+              
+              {/* CORREÇÃO: Card do Vídeo - AGORA DEVE FUNCIONAR! */}
+              {album.video && (
+                <VideoCard album={album} />
+              )}
             </div>
           </div>
         ))}
@@ -349,44 +536,97 @@ export default function GalleryPage() {
             <X size={32} />
           </button>
 
+          {/* Controles de navegação */}
           <button
-            onClick={prevPhoto}
+            onClick={prevMedia}
             className="absolute left-6 text-white hover:text-rose-300 transition-colors bg-black/50 rounded-full p-2 z-10"
           >
             <ChevronLeft size={48} />
           </button>
 
-          <div className="max-w-5xl max-h-full text-center">
-            <div className="relative">
-              {!loadedImages[`lightbox-${currentPhotoIndex}`] && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                  <div className="flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mb-4"></div>
-                    <p className="text-white text-lg">Carregando memória...</p>
-                  </div>
-                </div>
-              )}
-              <img
-                src={selectedAlbum.photos[currentPhotoIndex]}
-                alt={`${selectedAlbum.title} ${currentPhotoIndex + 1}`}
-                className="max-w-full max-h-[85vh] object-contain mx-auto rounded-lg transition-opacity duration-300"
-                onLoad={() => handleImageLoad(`lightbox-${currentPhotoIndex}`)}
-              />
-            </div>
-            <div className="text-white text-center mt-6">
-              <p className="text-xl font-serif">{selectedAlbum.title}</p>
-              <p className="text-rose-200 mt-1">
-                {currentPhotoIndex + 1} de {selectedAlbum.photos.length} momentos
-              </p>
-            </div>
-          </div>
-
           <button
-            onClick={nextPhoto}
+            onClick={nextMedia}
             className="absolute right-6 text-white hover:text-rose-300 transition-colors bg-black/50 rounded-full p-2 z-10"
           >
             <ChevronRight size={48} />
           </button>
+
+          <div className="max-w-5xl max-h-full text-center">
+            {isVideoPlaying ? (
+              // Player de Vídeo
+              <div className="relative bg-black rounded-lg overflow-hidden">
+                <video
+                  ref={videoRef}
+                  src={selectedAlbum.video}
+                  className="max-w-full max-h-[85vh] object-contain mx-auto"
+                  onEnded={handleVideoEnd}
+                  onPlay={handleVideoPlay}
+                  onPause={handleVideoPause}
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  playsInline
+                  preload="auto"
+                  muted={isVideoMuted}
+                  controls={false}
+                >
+                  Seu navegador não suporta o elemento de vídeo.
+                </video>
+                
+                {/* Controles customizados */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={toggleVideoPlayback}
+                      className="bg-rose-600 hover:bg-rose-700 text-white rounded-full p-3 transition-colors"
+                    >
+                      {isVideoPlaying ? <Pause size={24} /> : <Play size={24} fill="white" />}
+                    </button>
+                    
+                    <button
+                      onClick={toggleMute}
+                      className="bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                    >
+                      {isVideoMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    </button>
+                    
+                    <div className="text-white text-sm bg-black/50 px-3 py-1 rounded font-mono">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Visualizador de Fotos
+              <div className="relative">
+                {selectedAlbum.photos.length > 0 && !loadedImages[`lightbox-${currentIndex}`] && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mb-4"></div>
+                      <p className="text-white text-lg">Carregando memória...</p>
+                    </div>
+                  </div>
+                )}
+                {selectedAlbum.photos.length > 0 && (
+                  <img
+                    src={selectedAlbum.photos[currentIndex]}
+                    alt={`${selectedAlbum.title} ${currentIndex + 1}`}
+                    className="max-w-full max-h-[85vh] object-contain mx-auto rounded-lg transition-opacity duration-300"
+                    onLoad={() => handleImageLoad(`lightbox-${currentIndex}`)}
+                  />
+                )}
+              </div>
+            )}
+            
+            <div className="text-white text-center mt-6">
+              <p className="text-xl font-serif">{selectedAlbum.title}</p>
+              <p className="text-rose-200 mt-1">
+                {isVideoPlaying 
+                  ? 'Vídeo Especial - 1 Minuto de Pura Emoção' 
+                  : `${currentIndex + 1} de ${selectedAlbum.photos.length} momentos${selectedAlbum.video ? ' + vídeo' : ''}`
+                }
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>
