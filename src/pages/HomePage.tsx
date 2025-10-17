@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectFade, Navigation, Pagination } from 'swiper/modules';
 import { Heart, Calendar, MapPin } from 'lucide-react';
@@ -7,9 +7,8 @@ import 'swiper/css';
 import 'swiper/css/effect-fade';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
-import '../styles/swiper.css'; // Importe o arquivo CSS personalizado
+import '../styles/swiper.css';
 
-// Importe suas fotos - ajuste os caminhos conforme necessário
 import bgCover1 from '../photos/T_A-2.jpg';
 import bgCover2 from '../photos/T_A-284.jpg';
 import bgCover3 from '../photos/T_A-259.jpg';
@@ -51,6 +50,18 @@ const slides = [
 export default function HomePage({ onNavigate }: HomePageProps) {
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(false);
+  const [loadedImages, setLoadedImages] = useState<{[key: string]: boolean}>({});
+
+  useEffect(() => {
+    const preloadImages = [bgCover1, bgCover2, andersonPhoto, thaisPhoto];
+    preloadImages.forEach((src, index) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        setLoadedImages(prev => ({ ...prev, [index]: true }));
+      };
+    });
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -90,6 +101,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 style={{
                   backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url(${slide.image})`,
                   backgroundPosition: slide.position,
+                  willChange: 'transform',
                 }}
               >
                 <div className="text-center text-white px-4 z-10">
@@ -160,13 +172,23 @@ export default function HomePage({ onNavigate }: HomePageProps) {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="text-center">
               <div className="w-64 h-64 rounded-full mx-auto overflow-hidden shadow-lg mb-6 flex items-center justify-center">
+                {!loadedImages['anderson'] && (
+                  <div className="w-80 h-80 bg-gray-200 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600"></div>
+                  </div>
+                )}
                 <img
                   src={andersonPhoto}
                   alt="Anderson"
-                  className="w-80 h-80 object-cover"
+                  className={`w-80 h-80 object-cover transition-opacity duration-500 ${
+                    loadedImages['anderson'] ? 'opacity-100' : 'opacity-0 absolute'
+                  }`}
                   style={{
                     transform: 'scale(1) scaleX(-1)',
                   }}
+                  loading="lazy"
+                  decoding="async"
+                  onLoad={() => setLoadedImages(prev => ({ ...prev, 'anderson': true }))}
                 />
               </div>
               <h3 className="font-serif text-3xl text-rose-900 mb-3">Anderson Lopes</h3>
@@ -176,14 +198,24 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             </div>
             <div className="text-center">
               <div className="w-64 h-64 rounded-full mx-auto overflow-hidden shadow-lg mb-6 flex items-center justify-center">
+                {!loadedImages['thais'] && (
+                  <div className="w-80 h-80 bg-gray-200 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600"></div>
+                  </div>
+                )}
                 <img
                   src={thaisPhoto}
                   alt="Thais"
-                  className="w-80 h-80 object-cover"
+                  className={`w-80 h-80 object-cover transition-opacity duration-500 ${
+                    loadedImages['thais'] ? 'opacity-100' : 'opacity-0 absolute'
+                  }`}
                   style={{
                     transform: 'scale(0.99) scaleX(1)',
                     objectPosition: '5%'
                   }}
+                  loading="lazy"
+                  decoding="async"
+                  onLoad={() => setLoadedImages(prev => ({ ...prev, 'thais': true }))}
                 />
               </div>
               <h3 className="font-serif text-3xl text-rose-900 mb-3">Thais Duarte</h3>
@@ -246,7 +278,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       <section
         className="py-20 bg-cover bg-center relative"
         style={{
-          backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=1920)',
+          backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=1280&q=80)',
         }}
       >
         <div className="max-w-4xl mx-auto px-4 text-center text-white">

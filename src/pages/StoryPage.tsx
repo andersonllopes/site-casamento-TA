@@ -1,10 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ta70Photo from '../photos/T_A-70.jpg';
 import ta99Photo from '../photos/T_A-99.jpg';
 import ta176Photo from '../photos/T_A-176.jpg';
 
 export default function StoryPage() {
-  const [loadedImages, setLoadedImages] = useState({});
+  const [loadedImages, setLoadedImages] = useState<{[key: number]: boolean}>({});
+  const [visibleImages, setVisibleImages] = useState<{[key: number]: boolean}>({});
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = parseInt(entry.target.getAttribute('data-index') || '0');
+            setVisibleImages(prev => ({ ...prev, [index]: true }));
+          }
+        });
+      },
+      {
+        rootMargin: '100px',
+        threshold: 0.01
+      }
+    );
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
 
   const timeline = [
     {
@@ -24,8 +49,14 @@ export default function StoryPage() {
     }
   ];
 
-  const handleImageLoad = (index) => {
+  const handleImageLoad = (index: number) => {
     setLoadedImages(prev => ({ ...prev, [index]: true }));
+  };
+
+  const setImageRef = (el: HTMLDivElement | null, index: number) => {
+    if (el && observerRef.current) {
+      observerRef.current.observe(el);
+    }
   };
 
   return (
@@ -43,7 +74,11 @@ export default function StoryPage() {
               key={index}
               className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 items-center`}
             >
-              <div className="w-full md:w-1/2 relative">
+              <div
+                className="w-full md:w-1/2 relative"
+                ref={(el) => setImageRef(el, index)}
+                data-index={index}
+              >
                 {/* Placeholder enquanto carrega */}
                 {!loadedImages[index] && (
                   <div className="rounded-lg bg-gray-200 w-full h-80 flex items-center justify-center">
@@ -54,17 +89,21 @@ export default function StoryPage() {
                   </div>
                 )}
                 
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className={`rounded-lg shadow-lg w-full h-80 object-cover transition-all duration-500 ${
-                    loadedImages[index] 
-                      ? 'opacity-100 transform scale-100' 
-                      : 'opacity-0 transform scale-95 absolute top-0 left-0'
-                  }`}
-                  onLoad={() => handleImageLoad(index)}
-                  loading="lazy"
-                />
+                {visibleImages[index] && (
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className={`rounded-lg shadow-lg w-full h-80 object-cover transition-all duration-500 ${
+                      loadedImages[index]
+                        ? 'opacity-100 transform scale-100'
+                        : 'opacity-0 transform scale-95 absolute top-0 left-0'
+                    }`}
+                    onLoad={() => handleImageLoad(index)}
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
+                  />
+                )}
               </div>
               
               <div className="w-full md:w-1/2">

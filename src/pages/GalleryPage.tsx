@@ -30,131 +30,107 @@ export default function GalleryPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [imageQuality, setImageQuality] = useState<'low' | 'high'>('low');
 
-  // CORREÇÃO: Detecta se é mobile e ajusta qualidade
   useEffect(() => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    setImageQuality(isMobile ? 'low' : 'high');
-    
-    // Melhora performance no mobile
-    if (isMobile) {
-      console.log('Modo mobile ativado - otimizando performance');
-    }
+    const isSlowConnection = navigator.connection && (navigator.connection.effectiveType === 'slow-2g' || navigator.connection.effectiveType === '2g' || navigator.connection.effectiveType === '3g');
+
+    setImageQuality((isMobile || isSlowConnection) ? 'low' : 'high');
   }, []);
 
-  // CORREÇÃO: Carregamento otimizado com lazy loading
   useEffect(() => {
     const loadPhotos = async () => {
       try {
         setIsLoading(true);
-        
-        // Importa fotos de diferentes categorias
+
         const photoModules = {
-          prewedding: import.meta.glob('../photos/prewedding/T_A-*.{jpg,jpeg,png}', { 
-            eager: true,
-            query: '?url'
+          prewedding: import.meta.glob('../photos/prewedding/T_A-*.{jpg,jpeg,png}', {
+            eager: false,
+            import: 'default'
           }),
-          noivado: import.meta.glob('../photos/noivado/*.{jpg,jpeg,png}', { 
-            eager: true,
-            query: '?url'
+          noivado: import.meta.glob('../photos/noivado/*.{jpg,jpeg,png}', {
+            eager: false,
+            import: 'default'
           }),
-          namoro: import.meta.glob('../photos/namoro/*.{jpg,jpeg,png}', { 
-            eager: true,
-            query: '?url'
+          namoro: import.meta.glob('../photos/namoro/*.{jpg,jpeg,png}', {
+            eager: false,
+            import: 'default'
           })
         };
 
-        // Importação do vídeo
         let noivadoVideo = '';
         try {
-          const videoModules = import.meta.glob('../photos/noivado/*.mp4', { 
-            eager: true,
-            query: '?url'
+          const videoModules = import.meta.glob('../photos/noivado/*.mp4', {
+            eager: false,
+            import: 'default'
           });
-          noivadoVideo = Object.values(videoModules)[0]?.default || '';
+          const videoKeys = Object.keys(videoModules);
+          if (videoKeys.length > 0) {
+            noivadoVideo = await videoModules[videoKeys[0]]();
+          }
         } catch (videoError) {
           console.log('Vídeo não encontrado');
         }
 
-        if (!noivadoVideo) {
-          noivadoVideo = '/photos/noivado/pedido.mp4';
-        }
-
         const loadedAlbums: Album[] = [];
 
-        // Álbum Pre-Wedding - CORREÇÃO: Carrega apenas as primeiras imagens inicialmente
-        const preWeddingPhotos = Object.entries(photoModules.prewedding)
-          .map(([path, module]: [string, any]) => ({
+        const preWeddingEntries = Object.entries(photoModules.prewedding)
+          .map(([path, loader]) => ({
             path,
-            url: module.default,
+            loader,
             number: parseInt(path.match(/T_A-(\d+)/)?.[1] || '0')
           }))
-          .sort((a, b) => a.number - b.number)
-          .map(item => item.url);
+          .sort((a, b) => a.number - b.number);
+
+        const limitPreWedding = imageQuality === 'low' ? 15 : 30;
+        const preWeddingToLoad = preWeddingEntries.slice(0, limitPreWedding);
+        const preWeddingPhotos = await Promise.all(
+          preWeddingToLoad.map(item => item.loader())
+        );
 
         if (preWeddingPhotos.length > 0) {
-          // CORREÇÃO: Limita fotos iniciais para mobile
-          const initialPhotos = imageQuality === 'low' 
-            ? preWeddingPhotos.slice(0, 20) // Apenas 20 fotos iniciais no mobile
-            : preWeddingPhotos;
-            
-          const PHOTOS_PER_ALBUM = imageQuality === 'low' ? 50 : 100;
-          
-          for (let i = 0; i < initialPhotos.length; i += PHOTOS_PER_ALBUM) {
-            const albumPhotos = initialPhotos.slice(i, i + PHOTOS_PER_ALBUM);
-            
-            loadedAlbums.push({
-              title: 'Ensaio Pré-Wedding',
-              subtitle: albumPhotos.length > 1 ? `Sessão Romântica` : 'Nosso Ensaio',
-              count: preWeddingPhotos.length, // Mantém contagem total
-              cover: albumPhotos[0],
-              photos: albumPhotos,
-              category: 'prewedding'
-            });
-          }
+          loadedAlbums.push({
+            title: 'Ensaio Pré-Wedding',
+            subtitle: 'Sessão Romântica',
+            count: preWeddingEntries.length,
+            cover: preWeddingPhotos[0],
+            photos: preWeddingPhotos,
+            category: 'prewedding'
+          });
         }
 
-        // Álbum Noivado com vídeo
-        const noivadoPhotos = Object.entries(photoModules.noivado)
-          .map(([path, module]: [string, any]) => ({
-            url: module.default
-          }))
-          .map(item => item.url);
+        const noivadoEntries = Object.entries(photoModules.noivado);
+        const limitNoivado = imageQuality === 'low' ? 8 : 12;
+        const noivadoToLoad = noivadoEntries.slice(0, limitNoivado);
+        const noivadoPhotos = await Promise.all(
+          noivadoToLoad.map(([_, loader]) => loader())
+        );
 
         if (noivadoPhotos.length > 0 || noivadoVideo) {
-          // CORREÇÃO: Limita fotos no mobile
-          const displayPhotos = imageQuality === 'low' 
-            ? noivadoPhotos.slice(0, 15)
-            : noivadoPhotos;
-            
           loadedAlbums.push({
             title: 'Tempo de Espera e Sonhos',
             subtitle: 'Nossa Fase de Noivado',
-            count: noivadoPhotos.length + (noivadoVideo ? 1 : 0),
-            cover: displayPhotos[0] || '/placeholder.jpg',
-            photos: displayPhotos,
+            count: noivadoEntries.length + (noivadoVideo ? 1 : 0),
+            cover: noivadoPhotos[0] || '/placeholder.jpg',
+            photos: noivadoPhotos,
             video: noivadoVideo,
             category: 'noivado'
           });
         }
 
-        // Álbum Namoro
-        const namoroPhotos = Object.entries(photoModules.namoro)
-          .map(([path, module]: [string, any]) => ({
-            url: module.default
-          }))
-          .map(item => item.url);
+        const namoroEntries = Object.entries(photoModules.namoro);
+        const limitNamoro = imageQuality === 'low' ? 8 : 12;
+        const namoroToLoad = namoroEntries.slice(0, limitNamoro);
+        const namoroPhotos = await Promise.all(
+          namoroToLoad.map(([_, loader]) => loader())
+        );
 
         if (namoroPhotos.length > 0) {
-          const displayPhotos = imageQuality === 'low' 
-            ? namoroPhotos.slice(0, 10)
-            : namoroPhotos;
-            
           loadedAlbums.push({
             title: 'Nossos Primeiros Passos',
             subtitle: 'O Início da Nossa Jornada',
-            count: namoroPhotos.length,
-            cover: displayPhotos[0],
-            photos: displayPhotos,
+            count: namoroEntries.length,
+            cover: namoroPhotos[0],
+            photos: namoroPhotos,
             category: 'namoro'
           });
         }
@@ -174,8 +150,7 @@ export default function GalleryPage() {
           }
         ]);
       } finally {
-        // CORREÇÃO: Delay mínimo para evitar flash de loading
-        setTimeout(() => setIsLoading(false), 500);
+        setIsLoading(false);
       }
     };
 
@@ -376,18 +351,18 @@ export default function GalleryPage() {
           src={src}
           alt={alt}
           className={`${className} transition-all duration-300 ${
-            isLoaded 
-              ? 'opacity-100 transform scale-100' 
+            isLoaded
+              ? 'opacity-100 transform scale-100'
               : 'opacity-0 transform scale-95'
           }`}
           onLoad={() => handleImageLoad(imageKey)}
           onClick={onClick}
           loading="lazy"
           decoding="async"
-          // CORREÇÃO: Otimizações para mobile
-          style={{ 
+          fetchPriority="low"
+          style={{
             contentVisibility: 'auto',
-            contain: 'paint layout style'
+            contain: 'paint'
           }}
         />
       </div>
@@ -567,9 +542,10 @@ export default function GalleryPage() {
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={handleLoadedMetadata}
                   playsInline
-                  preload="auto"
+                  preload="metadata"
                   muted={isVideoMuted}
                   controls={false}
+                  poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23000' width='400' height='300'/%3E%3C/svg%3E"
                 />
                 
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 md:p-6">
@@ -610,7 +586,8 @@ export default function GalleryPage() {
                     alt={`${selectedAlbum.title} ${currentIndex + 1}`}
                     className="max-w-full max-h-[70vh] md:max-h-[85vh] object-contain mx-auto rounded-lg transition-opacity duration-300 w-full"
                     onLoad={() => handleImageLoad(`lightbox-${currentIndex}`)}
-                    loading="eager" // CORREÇÃO: eager para lightbox
+                    loading="eager"
+                    fetchPriority="high"
                   />
                 )}
               </div>
