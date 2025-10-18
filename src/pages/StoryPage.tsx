@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+
+// Verifique se estes caminhos estão corretos
 import ta70Photo from '../photos/T_A-70.jpg';
 import ta99Photo from '../photos/T_A-99.jpg';
 import ta176Photo from '../photos/T_A-176.jpg';
@@ -9,6 +11,9 @@ export default function StoryPage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
+    // Pré-carrega a primeira imagem imediatamente
+    setVisibleImages(prev => ({ ...prev, 0: true }));
+
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -19,8 +24,8 @@ export default function StoryPage() {
         });
       },
       {
-        rootMargin: '100px',
-        threshold: 0.01
+        rootMargin: '50px', // Reduzi a margem para carregar mais cedo
+        threshold: 0.1
       }
     );
 
@@ -53,6 +58,11 @@ export default function StoryPage() {
     setLoadedImages(prev => ({ ...prev, [index]: true }));
   };
 
+  const handleImageError = (index: number) => {
+    console.error(`Erro ao carregar imagem ${index}`);
+    setLoadedImages(prev => ({ ...prev, [index]: true })); // Marca como carregada mesmo com erro
+  };
+
   const setImageRef = (el: HTMLDivElement | null, index: number) => {
     if (el && observerRef.current) {
       observerRef.current.observe(el);
@@ -75,13 +85,13 @@ export default function StoryPage() {
               className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 items-center`}
             >
               <div
-                className="w-full md:w-1/2 relative"
+                className="w-full md:w-1/2 relative min-h-80"
                 ref={(el) => setImageRef(el, index)}
                 data-index={index}
               >
                 {/* Placeholder enquanto carrega */}
                 {!loadedImages[index] && (
-                  <div className="rounded-lg bg-gray-200 w-full h-80 flex items-center justify-center">
+                  <div className="rounded-lg bg-gray-200 w-full h-80 flex items-center justify-center absolute inset-0">
                     <div className="flex flex-col items-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600 mb-2"></div>
                       <p className="text-gray-500 text-sm">Carregando...</p>
@@ -89,21 +99,19 @@ export default function StoryPage() {
                   </div>
                 )}
                 
-                {visibleImages[index] && (
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className={`rounded-lg shadow-lg w-full h-80 object-cover transition-all duration-500 ${
-                      loadedImages[index]
-                        ? 'opacity-100 transform scale-100'
-                        : 'opacity-0 transform scale-95 absolute top-0 left-0'
-                    }`}
-                    onLoad={() => handleImageLoad(index)}
-                    loading="lazy"
-                    decoding="async"
-                    fetchPriority="low"
-                  />
-                )}
+                {/* Sempre renderiza a imagem, mas controla a visibilidade */}
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className={`rounded-lg shadow-lg w-full h-80 object-cover transition-all duration-500 ${
+                    loadedImages[index] && visibleImages[index]
+                      ? 'opacity-100 transform scale-100'
+                      : 'opacity-0 transform scale-95'
+                  }`}
+                  onLoad={() => handleImageLoad(index)}
+                  onError={() => handleImageError(index)}
+                  loading={index === 0 ? "eager" : "lazy"} // Primeira imagem carrega prioritariamente
+                />
               </div>
               
               <div className="w-full md:w-1/2">
