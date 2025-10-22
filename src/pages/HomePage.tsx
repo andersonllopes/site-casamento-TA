@@ -274,6 +274,100 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
 
+      {/* Seção: Localização */}
+      <section className="py-20 bg-gradient-to-b from-white to-rose-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="font-serif text-4xl text-rose-900 mb-4">Como Chegar</h2>
+            <p className="text-gray-600 text-lg">Celebre conosco neste lugar especial</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 items-start">
+            {/* Informações do Local */}
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              <div className="mb-6">
+                <h3 className="font-serif text-2xl text-rose-900 mb-4">Reis Recepções</h3>
+                <div className="space-y-4 text-gray-700">
+                  <div className="flex items-start gap-3">
+                    <MapPin size={24} className="text-rose-600 flex-shrink-0 mt-1" />
+                    <div>
+                      <p className="font-medium mb-1">Endereço:</p>
+                      <p className="text-sm leading-relaxed">
+                        Rod. Pref. Bento Rotger Domingues, 4430<br />
+                        Mombaça, Itapecerica da Serra - SP<br />
+                        CEP: 06872-888
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Calendar size={24} className="text-rose-600 flex-shrink-0 mt-1" />
+                    <div>
+                      <p className="font-medium mb-1">Data e Horário:</p>
+                      <p className="text-sm">
+                        21 de Dezembro, 2025<br />
+                        Cerimônia: 10:00 - 12:00<br />
+                        Recepção: 12:00 - 16:00
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="space-y-3">
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=Reis+Recepções+Rod.+Pref.+Bento+Rotger+Domingues+4430+Itapecerica+da+Serra+SP"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-rose-600 text-white text-center px-6 py-3 rounded-lg font-medium hover:bg-rose-700 transition-colors shadow-md"
+                >
+                  Abrir no Google Maps
+                </a>
+                <a
+                  href="https://www.waze.com/ul?q=Reis+Recepções+Itapecerica+da+Serra+SP"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-blue-600 text-white text-center px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md"
+                >
+                  Abrir no Waze
+                </a>
+                <a
+                  href="https://www.reisrecepcoes.com.br/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-gray-100 text-gray-700 text-center px-6 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors shadow-md"
+                >
+                  Visitar Site do Local
+                </a>
+              </div>
+            </div>
+
+            {/* Mapa */}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full min-h-[500px]">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3655.3789426989367!2d-46.8523!3d-23.6947!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce50f0d3c3e5a9%3A0x1234567890abcdef!2sRod.%20Pref.%20Bento%20Rotger%20Domingues%2C%204430%20-%20Momba%C3%A7a%2C%20Itapecerica%20da%20Serra%20-%20SP%2C%2006872-888!5e0!3m2!1spt-BR!2sbr!4v1634567890123!5m2!1spt-BR!2sbr"
+                width="100%"
+                height="100%"
+                style={{ border: 0, minHeight: '500px' }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Localização do Casamento - Reis Recepções"
+              ></iframe>
+            </div>
+          </div>
+
+          {/* Informações Adicionais */}
+          <div className="mt-8 bg-rose-50 border-l-4 border-rose-600 p-6 rounded-lg">
+            <p className="text-gray-700 text-sm leading-relaxed">
+              <strong className="text-rose-900">Dica:</strong> O local conta com amplo estacionamento gratuito.
+              Recomendamos chegar com 15-20 minutos de antecedência para acomodação confortável.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Seção: Confirmação de Presença */}
       <section
         className="py-20 bg-cover bg-center relative"
