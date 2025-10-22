@@ -317,7 +317,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
               {/* Botões de Ação */}
               <div className="space-y-3">
                 <a
-                  href="https://www.google.com/maps/search/?api=1&query=Reis+Recepções+Rod.+Pref.+Bento+Rotger+Domingues+4430+Itapecerica+da+Serra+SP"
+                  href="https://www.google.com/maps/place/Reis+Recep%C3%A7%C3%B5es/@-23.751417,-46.843012,16z/data=!4m15!1m8!3m7!1s0x94cfb2be4ce14fdd:0xa00d581e354d15db!2sRod.+Pref.+Bento+Rotger+Domingues,+4430+-+Momba%C3%A7a,+Itapecerica+da+Serra+-+SP,+06868-800!3b1!8m2!3d-23.7513532!4d-46.8429955!16s%2Fg%2F11cs7_2d25!3m5!1s0x94cfb2be522a60e9:0x55d5ecf0d9532700!8m2!3d-23.7514161!4d-46.8430992!16s%2Fg%2F11b6lfy3f9?hl=pt-BR&entry=ttu"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full bg-rose-600 text-white text-center px-6 py-3 rounded-lg font-medium hover:bg-rose-700 transition-colors shadow-md"
@@ -346,7 +346,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             {/* Mapa */}
             <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full min-h-[500px]">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3655.3789426989367!2d-46.8523!3d-23.6947!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce50f0d3c3e5a9%3A0x1234567890abcdef!2sRod.%20Pref.%20Bento%20Rotger%20Domingues%2C%204430%20-%20Momba%C3%A7a%2C%20Itapecerica%20da%20Serra%20-%20SP%2C%2006872-888!5e0!3m2!1spt-BR!2sbr!4v1634567890123!5m2!1spt-BR!2sbr"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3656.6785842658837!2d-46.845905!3d-23.7514161!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94cfb2be522a60e9%3A0x55d5ecf0d9532700!2sReis%20Recep%C3%A7%C3%B5es!5e0!3m2!1spt-BR!2sbr!4v1634567890124!5m2!1spt-BR!2sbr"
                 width="100%"
                 height="100%"
                 style={{ border: 0, minHeight: '500px' }}
