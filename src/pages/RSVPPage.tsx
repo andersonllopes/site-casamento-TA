@@ -4,25 +4,25 @@ import { supabase, type GuestConfirmation } from '../lib/supabase';
 
 interface Child {
   id: string;
-  name: string;
-  birthDate: string;
-  age?: number;
+  nome: string;
+  data_nascimento: string;
+  idade?: number;
 }
 
 interface GuestConfirmationWithChildren extends GuestConfirmation {
-  children_data?: Child[];
-  children_count?: number;
-  children_under_5?: number;
-  children_between_5_and_10?: number;
-  children_over_10?: number;
-  total_people_count?: number;
+  dados_criancas?: Child[];
+  quantidade_criancas?: number;
+  criancas_0_a_4_anos?: number;
+  criancas_5_a_10_anos?: number;
+  criancas_acima_10_anos?: number;
+  total_pessoas?: number;
 }
 
 interface InviteCode {
-  code: string;
-  max_guests: number;
-  guest_names: string;
-  is_used: boolean;
+  codigo: string;
+  max_convidados: number;
+  nomes_convidados: string;
+  utilizado: boolean;
 }
 
 export default function RSVPPage() {
@@ -33,21 +33,21 @@ export default function RSVPPage() {
   const [codeError, setCodeError] = useState('');
 
   const [formData, setFormData] = useState<GuestConfirmationWithChildren>({
-    name: '',
+    nome: '',
     email: '',
-    phone: '',
-    guests_count: 1,
-    attending: true,
-    dietary_restrictions: '',
-    children_data: [],
-    children_count: 0,
-    children_under_5: 0,
-    children_between_5_and_10: 0,
-    children_over_10: 0,
-    total_people_count: 1,
-    invite_code: '',
-    max_guests: 1,
-    guest_names: ''
+    telefone: '',
+    quantidade_adultos: 1,
+    confirmado: true,
+    restricoes_alimentares: '',
+    dados_criancas: [],
+    quantidade_criancas: 0,
+    criancas_0_a_4_anos: 0,
+    criancas_5_a_10_anos: 0,
+    criancas_acima_10_anos: 0,
+    total_pessoas: 1,
+    codigo_convite: '',
+    max_convidados: 1,
+    nomes_convidados: ''
   });
 
   const [children, setChildren] = useState<Child[]>([]);
@@ -69,7 +69,7 @@ export default function RSVPPage() {
       const { data, error } = await supabase
         .from('invite_codes')
         .select('*')
-        .eq('code', code.toUpperCase())
+        .eq('codigo', code.toUpperCase())
         .single();
 
       if (error) throw error;
@@ -79,7 +79,7 @@ export default function RSVPPage() {
         return;
       }
 
-      if (data.is_used) {
+      if (data.utilizado) {
         setCodeError('Este código já foi utilizado.');
         return;
       }
@@ -87,10 +87,10 @@ export default function RSVPPage() {
       setInviteData(data);
       setFormData(prev => ({
         ...prev,
-        invite_code: data.code,
-        max_guests: data.max_guests,
-        guest_names: data.guest_names,
-        guests_count: Math.min(prev.guests_count, data.max_guests)
+        codigo_convite: data.codigo,
+        max_convidados: data.max_convidados,
+        nomes_convidados: data.nomes_convidados,
+        quantidade_adultos: Math.min(prev.quantidade_adultos, data.max_convidados)
       }));
       setStep('form');
     } catch (error) {
@@ -102,52 +102,56 @@ export default function RSVPPage() {
   };
 
   // Calcular idade a partir da data de nascimento
-  const calculateAge = (birthDate: string): number => {
+  const calculateAge = (dataNascimento: string): number => {
     const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
+    const birth = new Date(dataNascimento);
+    let idade = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
     
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
+      idade--;
     }
     
-    return age;
+    return idade;
   };
 
-  // Calcular estatísticas das crianças com a nova lógica
+  // Calcular estatísticas das crianças com a nova lógica CORRIGIDA
   const calculateChildrenStats = (childrenList: Child[]) => {
     const childrenWithAge = childrenList.map(child => ({
       ...child,
-      age: child.birthDate ? calculateAge(child.birthDate) : undefined
+      idade: child.data_nascimento ? calculateAge(child.data_nascimento) : undefined
     }));
 
-    // Nova lógica:
-    // 0-5 anos: não contam (idade <= 5)
-    // 5-10 anos: meia entrada (idade > 5 e <= 10)
+    // Lógica CORRIGIDA conforme sua regra:
+    // 0-4 anos: não contam (idade < 5)
+    // 5-10 anos: meia entrada (idade >= 5 e <= 10) - 2 meias = 1 inteira
     // Acima de 10 anos: inteira (idade > 10)
-    const under5 = childrenWithAge.filter(child => child.age !== undefined && child.age <= 5).length;
-    const between5and10 = childrenWithAge.filter(child => child.age !== undefined && child.age > 5 && child.age <= 10).length;
-    const over10 = childrenWithAge.filter(child => child.age !== undefined && child.age > 10).length;
+    const criancas0a4 = childrenWithAge.filter(child => child.idade !== undefined && child.idade < 5).length;
+    const criancas5a10 = childrenWithAge.filter(child => child.idade !== undefined && child.idade >= 5 && child.idade <= 10).length;
+    const criancasAcima10 = childrenWithAge.filter(child => child.idade !== undefined && child.idade > 10).length;
     
-    // Calcular o total de "pessoas equivalentes"
-    // under5: 0 (não contam)
-    // between5and10: 0.5 cada (meia entrada)
-    // over10: 1 cada (inteira)
-    const childrenEquivalent = (between5and10 * 0.5) + (over10 * 1);
-    const totalPeople = formData.guests_count + childrenEquivalent;
+    // Calcular o total de "pessoas equivalentes" - CORRIGIDO
+    // criancas0a4: 0 (não contam)
+    // criancas5a10: 0.5 cada (meia entrada) - 2 meias = 1 inteira
+    // criancasAcima10: 1 cada (inteira)
+    
+    const meiasEntradas = criancas5a10;
+    const inteirasDeMeias = Math.ceil(meiasEntradas / 2); // 2 meias = 1 inteira
+    const equivalenteCriancas = inteirasDeMeias + criancasAcima10;
+    
+    const totalPessoas = formData.quantidade_adultos + equivalenteCriancas;
 
     return {
       childrenWithAge,
-      childrenUnder5: under5,
-      childrenBetween5and10: between5and10,
-      childrenOver10: over10,
-      totalPeople: totalPeople
+      criancas0a4: criancas0a4,
+      criancas5a10: criancas5a10,
+      criancasAcima10: criancasAcima10,
+      totalPessoas: totalPessoas
     };
   };
 
   const addChild = () => {
-    const newChildren = [...children, { id: Date.now().toString(), name: '', birthDate: '' }];
+    const newChildren = [...children, { id: Date.now().toString(), nome: '', data_nascimento: '' }];
     setChildren(newChildren);
     
     const stats = calculateChildrenStats(newChildren);
@@ -166,8 +170,8 @@ export default function RSVPPage() {
     const newChildren = children.map(child => {
       if (child.id === id) {
         const updatedChild = { ...child, [field]: value };
-        if (field === 'birthDate' && value) {
-          updatedChild.age = calculateAge(value);
+        if (field === 'data_nascimento' && value) {
+          updatedChild.idade = calculateAge(value);
         }
         return updatedChild;
       }
@@ -182,17 +186,17 @@ export default function RSVPPage() {
   const updateFormDataWithStats = (stats: any, childrenList: Child[]) => {
     setFormData(prev => ({
       ...prev,
-      children_data: childrenList,
-      children_count: childrenList.length,
-      children_under_5: stats.childrenUnder5,
-      children_between_5_and_10: stats.childrenBetween5and10,
-      children_over_10: stats.childrenOver10,
-      total_people_count: stats.totalPeople
+      dados_criancas: childrenList,
+      quantidade_criancas: childrenList.length,
+      criancas_0_a_4_anos: stats.criancas0a4,
+      criancas_5_a_10_anos: stats.criancas5a10,
+      criancas_acima_10_anos: stats.criancasAcima10,
+      total_pessoas: stats.totalPessoas
     }));
   };
 
   const handleGuestsCountChange = (value: number) => {
-    if (value > (inviteData?.max_guests || 1)) {
+    if (value > (inviteData?.max_convidados || 1)) {
       return; // Não permite exceder o máximo
     }
 
@@ -200,8 +204,8 @@ export default function RSVPPage() {
       const stats = calculateChildrenStats(children);
       return {
         ...prev,
-        guests_count: value,
-        total_people_count: value + (stats.childrenBetween5and10 * 0.5) + (stats.childrenOver10 * 1)
+        quantidade_adultos: value,
+        total_pessoas: stats.totalPessoas
       };
     });
   };
@@ -216,25 +220,25 @@ export default function RSVPPage() {
       // Verificar novamente se o código ainda é válido
       const { data: codeCheck } = await supabase
         .from('invite_codes')
-        .select('is_used')
-        .eq('code', inviteData?.code)
+        .select('utilizado')
+        .eq('codigo', inviteData?.codigo)
         .single();
 
-      if (codeCheck?.is_used) {
+      if (codeCheck?.utilizado) {
         throw new Error('Este código já foi utilizado. Por favor, entre em contato conosco.');
       }
 
       const stats = calculateChildrenStats(children);
-      const finalTotalPeople = stats.totalPeople;
+      const finalTotalPeople = stats.totalPessoas;
       
       const finalFormData = {
         ...formData,
-        children_data: children,
-        children_count: children.length,
-        children_under_5: stats.childrenUnder5,
-        children_between_5_and_10: stats.childrenBetween5and10,
-        children_over_10: stats.childrenOver10,
-        total_people_count: finalTotalPeople
+        dados_criancas: children,
+        quantidade_criancas: children.length,
+        criancas_0_a_4_anos: stats.criancas0a4,
+        criancas_5_a_10_anos: stats.criancas5a10,
+        criancas_acima_10_anos: stats.criancasAcima10,
+        total_pessoas: finalTotalPeople
       };
 
       // Inserir confirmação
@@ -247,8 +251,8 @@ export default function RSVPPage() {
       // Marcar código como usado
       const { error: codeUpdateError } = await supabase
         .from('invite_codes')
-        .update({ is_used: true })
-        .eq('code', inviteData?.code);
+        .update({ utilizado: true })
+        .eq('codigo', inviteData?.codigo);
 
       if (codeUpdateError) throw codeUpdateError;
 
@@ -265,7 +269,7 @@ export default function RSVPPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
-    if (name === 'guests_count') {
+    if (name === 'quantidade_adultos') {
       handleGuestsCountChange(parseInt(value));
     } else {
       setFormData(prev => ({
@@ -282,21 +286,21 @@ export default function RSVPPage() {
     setInviteCode('');
     setInviteData(null);
     setFormData({
-      name: '',
+      nome: '',
       email: '',
-      phone: '',
-      guests_count: 1,
-      attending: true,
-      dietary_restrictions: '',
-      children_data: [],
-      children_count: 0,
-      children_under_5: 0,
-      children_between_5_and_10: 0,
-      children_over_10: 0,
-      total_people_count: 1,
-      invite_code: '',
-      max_guests: 1,
-      guest_names: ''
+      telefone: '',
+      quantidade_adultos: 1,
+      confirmado: true,
+      restricoes_alimentares: '',
+      dados_criancas: [],
+      quantidade_criancas: 0,
+      criancas_0_a_4_anos: 0,
+      criancas_5_a_10_anos: 0,
+      criancas_acima_10_anos: 0,
+      total_pessoas: 1,
+      codigo_convite: '',
+      max_convidados: 1,
+      nomes_convidados: ''
     });
     setChildren([]);
   };
@@ -374,7 +378,7 @@ export default function RSVPPage() {
                 <div>
                   <p className="text-green-800 font-medium">Convite Validado ✓</p>
                   <p className="text-green-700 text-sm">
-                    {inviteData.guest_names} • Máximo de {inviteData.max_guests} adulto(s)
+                    {inviteData.nomes_convidados} • Máximo de {inviteData.max_convidados} adulto(s)
                   </p>
                 </div>
                 <button
@@ -389,15 +393,15 @@ export default function RSVPPage() {
             <form onSubmit={handleSubmit} className="bg-rose-50 rounded-lg p-8 shadow-md">
               <div className="space-y-6">
                 <div>
-                  <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
+                  <label htmlFor="nome" className="block text-gray-700 font-medium mb-2">
                     Nome Completo *
                   </label>
                   <input
                     type="text"
-                    id="name"
-                    name="name"
+                    id="nome"
+                    name="nome"
                     required
-                    value={formData.name}
+                    value={formData.nome}
                     onChange={handleChange}
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition"
                   />
@@ -419,29 +423,29 @@ export default function RSVPPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="phone" className="block text-gray-700 font-medium mb-2">
+                  <label htmlFor="telefone" className="block text-gray-700 font-medium mb-2">
                     Telefone
                   </label>
                   <input
                     type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
+                    id="telefone"
+                    name="telefone"
+                    value={formData.telefone}
                     onChange={handleChange}
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="attending" className="block text-gray-700 font-medium mb-2">
+                  <label htmlFor="confirmado" className="block text-gray-700 font-medium mb-2">
                     Você vai comparecer? *
                   </label>
                   <select
-                    id="attending"
-                    name="attending"
+                    id="confirmado"
+                    name="confirmado"
                     required
-                    value={formData.attending.toString()}
-                    onChange={(e) => setFormData(prev => ({ ...prev, attending: e.target.value === 'true' }))}
+                    value={formData.confirmado.toString()}
+                    onChange={(e) => setFormData(prev => ({ ...prev, confirmado: e.target.value === 'true' }))}
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition"
                   >
                     <option value="true">Sim, estarei presente</option>
@@ -449,31 +453,31 @@ export default function RSVPPage() {
                   </select>
                 </div>
 
-                {formData.attending && (
+                {formData.confirmado && (
                   <>
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label htmlFor="guests_count" className="block text-gray-700 font-medium">
+                        <label htmlFor="quantidade_adultos" className="block text-gray-700 font-medium">
                           Número de Adultos *
                         </label>
                         <span className="text-sm text-gray-500">
-                          {formData.guests_count} de {inviteData.max_guests} permitidos
+                          {formData.quantidade_adultos} de {inviteData.max_convidados} permitidos
                         </span>
                       </div>
                       <input
                         type="number"
-                        id="guests_count"
-                        name="guests_count"
+                        id="quantidade_adultos"
+                        name="quantidade_adultos"
                         min="1"
-                        max={inviteData.max_guests}
+                        max={inviteData.max_convidados}
                         required
-                        value={formData.guests_count}
+                        value={formData.quantidade_adultos}
                         onChange={handleChange}
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition"
                       />
                     </div>
 
-                    {/* Seção de Crianças */}
+                    {/* Seção de Crianças - simplificada para os convidados */}
                     <div className="border-t border-gray-200 pt-6">
                       <div className="flex items-center justify-between mb-4">
                         <label className="block text-gray-700 font-medium mb-2">Crianças da Família</label>
@@ -489,14 +493,6 @@ export default function RSVPPage() {
 
                       <p className="text-sm text-gray-600 mb-4">
                         Informe os dados das crianças para nos ajudar no planejamento do evento.
-                        <br />
-                        <span className="text-rose-600 font-medium">
-                          • 0-5 anos: não pagam
-                          <br />
-                          • 5-10 anos: meia entrada (2 crianças = 1 adulto)
-                          <br />
-                          • Acima de 10 anos: inteira
-                        </span>
                       </p>
 
                       <div className="space-y-4">
@@ -520,8 +516,8 @@ export default function RSVPPage() {
                                 </label>
                                 <input
                                   type="text"
-                                  value={child.name}
-                                  onChange={(e) => updateChild(child.id, 'name', e.target.value)}
+                                  value={child.nome}
+                                  onChange={(e) => updateChild(child.id, 'nome', e.target.value)}
                                   className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-200 outline-none transition"
                                   placeholder="Nome completo"
                                 />
@@ -534,16 +530,13 @@ export default function RSVPPage() {
                                 <input
                                   type="date"
                                   required
-                                  value={child.birthDate}
-                                  onChange={(e) => updateChild(child.id, 'birthDate', e.target.value)}
+                                  value={child.data_nascimento}
+                                  onChange={(e) => updateChild(child.id, 'data_nascimento', e.target.value)}
                                   className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-200 outline-none transition"
                                 />
-                                {child.age !== undefined && (
-                                  <p className="text-xs text-rose-600 mt-1">
-                                    Idade: {child.age} anos • 
-                                    {child.age <= 5 && ' Não paga'}
-                                    {child.age > 5 && child.age <= 10 && ' Meia entrada'}
-                                    {child.age > 10 && ' Inteira'}
+                                {child.idade !== undefined && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Idade: {child.idade} anos
                                   </p>
                                 )}
                               </div>
@@ -551,46 +544,17 @@ export default function RSVPPage() {
                           </div>
                         ))}
                       </div>
-
-                      {/* Resumo das crianças */}
-                      {children.length > 0 && (
-                        <div className="mt-4 p-4 bg-rose-100 rounded-lg">
-                          <h4 className="font-medium text-rose-900 mb-2">Resumo das Crianças:</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div className="text-center">
-                              <div className="text-rose-600 font-bold">{formData.children_under_5 || 0}</div>
-                              <div className="text-rose-700">0-5 anos</div>
-                              <div className="text-xs text-rose-600">Não pagam</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-rose-600 font-bold">{formData.children_between_5_and_10 || 0}</div>
-                              <div className="text-rose-700">5-10 anos</div>
-                              <div className="text-xs text-rose-600">Meia entrada</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-rose-600 font-bold">{formData.children_over_10 || 0}</div>
-                              <div className="text-rose-700">+10 anos</div>
-                              <div className="text-xs text-rose-600">Inteira</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-rose-600 font-bold">{formData.total_people_count || 1}</div>
-                              <div className="text-rose-700">Total pessoas</div>
-                              <div className="text-xs text-rose-600">Equivalentes</div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                       
                     <div>
-                      <label htmlFor="dietary_restrictions" className="block text-gray-700 font-medium mb-2">
+                      <label htmlFor="restricoes_alimentares" className="block text-gray-700 font-medium mb-2">
                         Restrições Alimentares ou Alergias
                       </label>
                       <textarea
-                        id="dietary_restrictions"
-                        name="dietary_restrictions"
+                        id="restricoes_alimentares"
+                        name="restricoes_alimentares"
                         rows={3}
-                        value={formData.dietary_restrictions}
+                        value={formData.restricoes_alimentares}
                         onChange={handleChange}
                         placeholder="Informe restrições para adultos e crianças..."
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition resize-none"
