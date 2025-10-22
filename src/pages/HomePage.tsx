@@ -249,7 +249,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                   <span>10:00 - 12:00</span>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
-                  Cerimônia de casamento na igreja
+                  Cerimônia de Casamento
                 </p>
               </div>
             </div>
@@ -266,7 +266,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                   <span>12:00 - 16:00</span>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
-                  Recepção e celebração
+                  Recepção e Celebração
                 </p>
               </div>
             </div>
