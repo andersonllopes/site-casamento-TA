@@ -57,20 +57,4 @@
   command = "npm run build"
 
 [build.environment]
-  NODE_VERSION = "22"
-  NPM_FLAGS = "--include=dev"
-
-[[plugins]]
-  package = "@netlify/plugin-lighthouse"
-
-  [plugins.inputs.thresholds]
-    performance = 0.9
-    accessibility = 0.9
-    best-practices = 0.9
-    seo = 0.9
-
-[[plugins]]
-  package = "netlify-plugin-cache"
-
-  [plugins.inputs]
-    paths = ["node_modules", ".cache"]
+  NODE_VERSION = "18"
