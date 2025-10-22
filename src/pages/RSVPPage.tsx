@@ -13,7 +13,8 @@ interface GuestConfirmationWithChildren extends GuestConfirmation {
   children_data?: Child[];
   children_count?: number;
   children_under_5?: number;
-  children_over_5?: number;
+  children_between_5_and_10?: number;
+  children_over_10?: number;
   total_people_count?: number;
 }
 
@@ -41,7 +42,8 @@ export default function RSVPPage() {
     children_data: [],
     children_count: 0,
     children_under_5: 0,
-    children_over_5: 0,
+    children_between_5_and_10: 0,
+    children_over_10: 0,
     total_people_count: 1,
     invite_code: '',
     max_guests: 1,
@@ -113,22 +115,33 @@ export default function RSVPPage() {
     return age;
   };
 
-  // Calcular estatísticas das crianças
+  // Calcular estatísticas das crianças com a nova lógica
   const calculateChildrenStats = (childrenList: Child[]) => {
     const childrenWithAge = childrenList.map(child => ({
       ...child,
       age: child.birthDate ? calculateAge(child.birthDate) : undefined
     }));
 
-    const under5 = childrenWithAge.filter(child => child.age !== undefined && child.age <= 4).length;
-    const over5 = childrenWithAge.filter(child => child.age !== undefined && child.age >= 5).length;
+    // Nova lógica:
+    // 0-5 anos: não contam (idade <= 5)
+    // 5-10 anos: meia entrada (idade > 5 e <= 10)
+    // Acima de 10 anos: inteira (idade > 10)
+    const under5 = childrenWithAge.filter(child => child.age !== undefined && child.age <= 5).length;
+    const between5and10 = childrenWithAge.filter(child => child.age !== undefined && child.age > 5 && child.age <= 10).length;
+    const over10 = childrenWithAge.filter(child => child.age !== undefined && child.age > 10).length;
     
-    const totalPeople = formData.guests_count + (under5 * 0.5) + (over5 * 1);
+    // Calcular o total de "pessoas equivalentes"
+    // under5: 0 (não contam)
+    // between5and10: 0.5 cada (meia entrada)
+    // over10: 1 cada (inteira)
+    const childrenEquivalent = (between5and10 * 0.5) + (over10 * 1);
+    const totalPeople = formData.guests_count + childrenEquivalent;
 
     return {
       childrenWithAge,
       childrenUnder5: under5,
-      childrenOver5: over5,
+      childrenBetween5and10: between5and10,
+      childrenOver10: over10,
       totalPeople: totalPeople
     };
   };
@@ -172,7 +185,8 @@ export default function RSVPPage() {
       children_data: childrenList,
       children_count: childrenList.length,
       children_under_5: stats.childrenUnder5,
-      children_over_5: stats.childrenOver5,
+      children_between_5_and_10: stats.childrenBetween5and10,
+      children_over_10: stats.childrenOver10,
       total_people_count: stats.totalPeople
     }));
   };
@@ -187,7 +201,7 @@ export default function RSVPPage() {
       return {
         ...prev,
         guests_count: value,
-        total_people_count: value + (stats.childrenUnder5 * 0.5) + (stats.childrenOver5 * 1)
+        total_people_count: value + (stats.childrenBetween5and10 * 0.5) + (stats.childrenOver10 * 1)
       };
     });
   };
@@ -218,7 +232,8 @@ export default function RSVPPage() {
         children_data: children,
         children_count: children.length,
         children_under_5: stats.childrenUnder5,
-        children_over_5: stats.childrenOver5,
+        children_between_5_and_10: stats.childrenBetween5and10,
+        children_over_10: stats.childrenOver10,
         total_people_count: finalTotalPeople
       };
 
@@ -276,7 +291,8 @@ export default function RSVPPage() {
       children_data: [],
       children_count: 0,
       children_under_5: 0,
-      children_over_5: 0,
+      children_between_5_and_10: 0,
+      children_over_10: 0,
       total_people_count: 1,
       invite_code: '',
       max_guests: 1,
@@ -457,7 +473,7 @@ export default function RSVPPage() {
                       />
                     </div>
 
-                    {/* Seção de Crianças - totalmente oculta a contagem */}
+                    {/* Seção de Crianças */}
                     <div className="border-t border-gray-200 pt-6">
                       <div className="flex items-center justify-between mb-4">
                         <label className="block text-gray-700 font-medium mb-2">Crianças da Família</label>
@@ -473,6 +489,14 @@ export default function RSVPPage() {
 
                       <p className="text-sm text-gray-600 mb-4">
                         Informe os dados das crianças para nos ajudar no planejamento do evento.
+                        <br />
+                        <span className="text-rose-600 font-medium">
+                          • 0-5 anos: não pagam
+                          <br />
+                          • 5-10 anos: meia entrada (2 crianças = 1 adulto)
+                          <br />
+                          • Acima de 10 anos: inteira
+                        </span>
                       </p>
 
                       <div className="space-y-4">
@@ -514,11 +538,48 @@ export default function RSVPPage() {
                                   onChange={(e) => updateChild(child.id, 'birthDate', e.target.value)}
                                   className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-200 outline-none transition"
                                 />
+                                {child.age !== undefined && (
+                                  <p className="text-xs text-rose-600 mt-1">
+                                    Idade: {child.age} anos • 
+                                    {child.age <= 5 && ' Não paga'}
+                                    {child.age > 5 && child.age <= 10 && ' Meia entrada'}
+                                    {child.age > 10 && ' Inteira'}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </div>
                         ))}
                       </div>
+
+                      {/* Resumo das crianças */}
+                      {children.length > 0 && (
+                        <div className="mt-4 p-4 bg-rose-100 rounded-lg">
+                          <h4 className="font-medium text-rose-900 mb-2">Resumo das Crianças:</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div className="text-center">
+                              <div className="text-rose-600 font-bold">{formData.children_under_5 || 0}</div>
+                              <div className="text-rose-700">0-5 anos</div>
+                              <div className="text-xs text-rose-600">Não pagam</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-rose-600 font-bold">{formData.children_between_5_and_10 || 0}</div>
+                              <div className="text-rose-700">5-10 anos</div>
+                              <div className="text-xs text-rose-600">Meia entrada</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-rose-600 font-bold">{formData.children_over_10 || 0}</div>
+                              <div className="text-rose-700">+10 anos</div>
+                              <div className="text-xs text-rose-600">Inteira</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-rose-600 font-bold">{formData.total_people_count || 1}</div>
+                              <div className="text-rose-700">Total pessoas</div>
+                              <div className="text-xs text-rose-600">Equivalentes</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                       
                     <div>
